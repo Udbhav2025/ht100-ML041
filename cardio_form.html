@@ -3,343 +3,175 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Cardio Predictor — Baseline Risk</title>
+  <title>Cardio Risk — Web UI</title>
   <style>
-    /* Simple clean styling to match the screenshot layout */
-    :root{
-      --bg:#fff;
-      --muted:#777;
-      --accent:#d9534f;
-      --accent-2:#337ab7;
-    }
-    body{
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background:#f8f9fb;
-      margin:0;
-      padding:24px;
-    }
-    .container{
-      max-width:900px;
-      margin:0 auto;
-      background:var(--bg);
-      border-radius:6px;
-      box-shadow:0 6px 18px rgba(0,0,0,0.06);
-      padding:20px;
-    }
-
-    .tabs{
-      display:flex;
-      gap:12px;
-      border-bottom:3px solid #eee;
-      margin-bottom:18px;
-    }
-    .tab{
-      padding:10px 14px;
-      color:var(--muted);
-      font-weight:600;
-    }
-    .tab.active{
-      color:var(--accent-2);
-      border-bottom:3px solid var(--accent-2);
-    }
-
-    .form-grid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px 36px;
-    }
-
-    .field-row{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:14px 6px;
-      border-bottom:1px solid #f1f1f1;
-    }
-
-    .label{
-      width:180px;
-      font-weight:600;
-    }
-    .control{
-      flex:1;
-    }
-    input[type="text"], input[type="number"], select{
-      width:100%;
-      padding:9px 10px;
-      border-radius:4px;
-      border:1px solid #e0e0e0;
-      background:#fbfbfb;
-    }
-    .small{
-      width:120px;
-    }
-    .checkbox{
-      width:18px;
-      height:18px;
-    }
-
-    .actions{
-      display:flex;
-      justify-content:center;
-      margin-top:18px;
-    }
-
-    .btn{
-      background:var(--accent-2);
-      color:white;
-      border:none;
-      padding:9px 18px;
-      border-radius:6px;
-      font-weight:600;
-      cursor:pointer;
-    }
-    .result{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      justify-content:center;
-      margin-top:12px;
-      font-weight:700;
-    }
-
-    .badge{
-      background:#f0f4ff;
-      color:var(--accent-2);
-      padding:8px 12px;
-      border-radius:20px;
-      font-weight:700;
-      min-width:120px;
-      text-align:center;
-    }
-
-    /* Responsive */
-    @media (max-width:760px){
-      .form-grid{ grid-template-columns: 1fr; }
-      .label{ width:140px; }
-    }
+    body { font-family: Arial, Helvetica, sans-serif; max-width: 920px; margin: 28px auto; padding: 0 16px; color:#222; }
+    h1 { font-size: 1.6rem; margin-bottom: 6px; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; align-items:end; }
+    label { display:block; font-size:0.9rem; margin-bottom:4px; }
+    input[type="number"], input[type="text"], select { width:100%; padding:8px; box-sizing:border-box; }
+    .full { grid-column: 1 / -1; }
+    .controls { margin-top: 14px; }
+    button { padding:10px 14px; font-size:1rem; cursor:pointer; border-radius:6px; border:1px solid #444; background:#f1f1f1; }
+    #modelNote { margin-top:12px; color:#333; font-weight:600; }
+    #baselineBadge { display:inline-block; margin-top:10px; padding:8px 10px; border-radius:6px; background:#eee; font-weight:700; }
+    .small { font-size:0.85rem; color:#555; }
+    .checkbox-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    footer { margin-top:28px; font-size:0.85rem; color:#666; }
   </style>
 </head>
 <body>
-  <div class="container" role="main">
-    <div class="tabs" aria-hidden="false">
-      <div class="tab active">Baseline Risk</div>
-      <div class="tab">Updated Risk</div>
+  <h1>Cardio Risk — Web UI</h1>
+  <p class="small">This form sends your inputs to the backend at <code>/api/predict</code>. The backend returns the model prediction and probabilities.</p>
+
+  <form id="cardioForm" class="grid" autocomplete="off" onsubmit="return false;">
+    
+    <!-- Row 1 -->
+    <div>
+      <label for="age">Age (years)</label>
+      <input id="age" name="age" type="number" min="1" max="120" value="55" />
     </div>
 
-    <form id="cardioForm" autocomplete="off">
-      <div class="form-grid">
-        <!-- Left column (Baseline-like) -->
-        <div>
-          <div class="field-row">
-            <div class="label">Gender</div>
-            <div class="control">
-              <label><input type="radio" name="gender" value="male" checked /> Male</label>
-              &nbsp;&nbsp;
-              <label><input type="radio" name="gender" value="female" /> Female</label>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">Age (years)</div>
-            <div class="control"><input id="age" type="number" min="20" max="120" placeholder="40-79" value="55" /></div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">Race</div>
-            <div class="control">
-              <select id="race">
-                <option value="white">White</option>
-                <option value="black">Black</option>
-                <option value="asian">Asian</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">Total Cholesterol</div>
-            <div class="control"><input id="totalChol" type="number" min="100" max="400" placeholder="130-320" value="200" /></div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">LDL Cholesterol</div>
-            <div class="control"><input id="ldl" type="number" min="20" max="300" placeholder="LDL" /></div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">HDL Cholesterol</div>
-            <div class="control"><input id="hdl" type="number" min="10" max="200" placeholder="20-100" value="50" /></div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">Treatment With Statin</div>
-            <div class="control"><input id="statin" class="checkbox" type="checkbox" /></div>
-          </div>
-        </div>
-
-        <!-- Right column -->
-        <div>
-          <div class="field-row">
-            <div class="label">Systolic Blood Pressure</div>
-            <div class="control"><input id="systolic" class="small" type="number" min="60" max="260" placeholder="90-200" value="120" /></div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">Treatment For Hypertension</div>
-            <div class="control"><input id="htn" class="checkbox" type="checkbox" /></div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">History Of Diabetes</div>
-            <div class="control"><input id="diabetes" class="checkbox" type="checkbox" /></div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">Current Smoker</div>
-            <div class="control"><input id="smoker" class="checkbox" type="checkbox" /></div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">Aspirin Therapy</div>
-            <div class="control"><input id="aspirin" class="checkbox" type="checkbox" /></div>
-          </div>
-
-          <div class="field-row">
-            <div class="label">Model output</div>
-            <div class="control">
-              <div id="modelNote" style="color:var(--muted);">No prediction yet — click calculate.</div>
-            </div>
-          </div>
-        </div>
+    <div>
+      <label for="gender">Gender</label>
+      <div style="display:flex;gap:8px;">
+        <label><input type="radio" name="gender" value="male" checked /> Male</label>
+        <label><input type="radio" name="gender" value="female" /> Female</label>
       </div>
+    </div>
 
-      <div class="actions">
-        <button type="button" class="btn" id="calcBtn">Calculate Baseline Risk</button>
-      </div>
+    <!-- Row 2 -->
+    <div>
+      <label for="systolic">Systolic BP (trestbps)</label>
+      <input id="systolic" name="trestbps" type="number" value="120" />
+    </div>
 
-      <div class="result" aria-live="polite">
-        <div>Baseline 10-year risk:</div>
-        <div id="baselineBadge" class="badge">—</div>
-      </div>
-    </form>
-  </div>
+    <div>
+      <label for="thalach">Max heart rate achieved (thalach)</label>
+      <input id="thalach" name="thalach" type="number" value="150" />
+    </div>
+
+    <!-- Row 3 -->
+    <div>
+      <label for="chol">Cholesterol (chol)</label>
+      <input id="chol" name="chol" type="number" value="200" />
+    </div>
+
+    <div>
+      <label for="oldpeak">Oldpeak (ST depression)</label>
+      <input id="oldpeak" name="oldpeak" type="number" step="0.1" value="1.0" />
+    </div>
+
+    <!-- Row 4 -->
+    <div>
+      <label for="hdl">HDL</label>
+      <input id="hdl" name="hdl" type="number" value="50" />
+    </div>
+
+    <div>
+      <label for="ldl">LDL</label>
+      <input id="ldl" name="ldl" type="number" value="100" />
+    </div>
+
+    <!-- Row 5 -->
+    <div class="full">
+      <label for="race">Race / Ethnicity (optional)</label>
+      <select id="race" name="race">
+        <option value="">Prefer not to say</option>
+        <option value="asian">Asian</option>
+        <option value="black">Black</option>
+        <option value="white">White</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <!-- Row 6 checkboxes -->
+    <div class="checkbox-row full">
+      <label><input type="checkbox" id="statin" name="statin" /> On statin</label>
+      <label><input type="checkbox" id="htn" name="htn" /> Hypertension</label>
+      <label><input type="checkbox" id="diabetes" name="diabetes" /> Diabetes</label>
+      <label><input type="checkbox" id="smoker" name="smoker" /> Smoker</label>
+      <label><input type="checkbox" id="aspirin" name="aspirin" /> Aspirin</label>
+    </div>
+
+    <!-- Button -->
+    <div class="full controls">
+      <button id="calcBtn" type="button">Calculate Baseline Risk</button>
+      <span id="baselineBadge" aria-live="polite">No prediction yet.</span>
+      <div id="modelNote" class="small">Model note: results appear after contacting the server.</div>
+    </div>
+
+  </form>
+
+  <footer>
+    If your model's feature names differ, tell me and I will adjust this file exactly for your dataset.
+  </footer>
 
   <script>
-    // Frontend-only simulated risk calculation
-    // The notebook file contains model training code (server-side). This client code
-    // simulates a reasonably-behaving risk calc so the form is interactive.
-    //
-    // You can replace the `computeRisk` function with a call to your actual model
-    // (e.g., POST the inputs to a server endpoint that loads the trained model).
-    //
-    // The dataset reference used for layout: /mnt/data/dataset.html. :contentReference[oaicite:2]{index=2}
-
     const el = id => document.getElementById(id);
 
-    function sigmoid(x){
-      return 1 / (1 + Math.exp(-x));
-    }
+    function readFormValues() {
+      const gender = document.querySelector('input[name="gender"]:checked')?.value || '';
+      return {
+        age: Number(el('age').value) || null,
+        trestbps: Number(el('systolic').value) || null,
+        chol: Number(el('chol').value) || null,
+        thalach: Number(el('thalach').value) || null,
+        oldpeak: Number(el('oldpeak').value) || null,
+        hdl: Number(el('hdl').value) || null,
+        ldl: Number(el('ldl').value) || null,
 
-    function computeRisk(values){
-      // values: {age, gender, totalChol, ldl, hdl, systolic, statin, htn, diabetes, smoker, aspirin}
-      // These coefficients are illustrative — treat as a simulated scoring function.
-      const coeffs = {
-        intercept: -7.2,
-        age: 0.04,           // per year
-        male: 0.45,          // male vs female
-        totalChol: 0.008,    // per mg/dL
-        ldl: 0.0025,
-        hdl: -0.018,
-        systolic: 0.018,
-        statin: -0.28,
-        htn: 0.12,
-        diabetes: 0.85,
-        smoker: 0.45,
-        aspirin: -0.12
+        gender: gender,
+        race: el('race').value || null,
+
+        statin: el('statin').checked ? 1 : 0,
+        htn: el('htn').checked ? 1 : 0,
+        diabetes: el('diabetes').checked ? 1 : 0,
+        smoker: el('smoker').checked ? 1 : 0,
+        aspirin: el('aspirin').checked ? 1 : 0
       };
-
-      let x = coeffs.intercept;
-      x += coeffs.age * values.age;
-      x += coeffs.male * (values.gender === 'male' ? 1 : 0);
-      x += coeffs.totalChol * (values.totalChol || 0);
-      x += coeffs.ldl * (values.ldl || 0);
-      x += coeffs.hdl * (values.hdl || 0);
-      x += coeffs.systolic * (values.systolic || 0);
-      x += coeffs.statin * (values.statin ? 1 : 0);
-      x += coeffs.htn * (values.htn ? 1 : 0);
-      x += coeffs.diabetes * (values.diabetes ? 1 : 0);
-      x += coeffs.smoker * (values.smoker ? 1 : 0);
-      x += coeffs.aspirin * (values.aspirin ? 1 : 0);
-
-      // convert to probability (approx 10-year risk)
-      const prob = sigmoid(x);
-      // scale to percent
-      return Math.round(prob * 1000) / 10; // one decimal, e.g., 7.3%
     }
 
-    function readForm(){
-      const gender = document.querySelector('input[name="gender"]:checked').value;
-      const values = {
-        gender,
-        age: Number(el('age').value) || 0,
-        race: el('race').value,
-        totalChol: Number(el('totalChol').value) || 0,
-        ldl: Number(el('ldl').value) || 0,
-        hdl: Number(el('hdl').value) || 0,
-        systolic: Number(el('systolic').value) || 0,
-        statin: el('statin').checked,
-        htn: el('htn').checked,
-        diabetes: el('diabetes').checked,
-        smoker: el('smoker').checked,
-        aspirin: el('aspirin').checked
-      };
-      return values;
+    function showStatus(msg) {
+      el('modelNote').textContent = msg;
     }
 
-    function showResult(pct){
-      const badge = el('baselineBadge');
-      badge.textContent = (typeof pct === 'number') ? `${pct}%` : '—';
-      // color cue
-      const val = Number(pct);
-      if(isNaN(val)){
-        badge.style.background = '#f0f4ff';
-        badge.style.color = 'var(--accent-2)';
-      } else if(val < 5) {
-        badge.style.background = '#f0fff4';
-        badge.style.color = '#2b8a3e';
-      } else if(val < 10) {
-        badge.style.background = '#fff8e6';
-        badge.style.color = '#c77f00';
+    function showResultFromServer(resp) {
+      if (resp.probabilities) {
+        let p1 = resp.probabilities.length > 1 ? resp.probabilities[1] : resp.probabilities[0];
+        el('baselineBadge').textContent = `Prediction: ${resp.prediction} — Risk: ${(p1 * 100).toFixed(1)}%`;
       } else {
-        badge.style.background = '#fff0f0';
-        badge.style.color = '#c02020';
+        el('baselineBadge').textContent = `Prediction: ${resp.prediction}`;
+      }
+    }
+
+    async function callPredict(data) {
+      showStatus("Contacting server...");
+      try {
+        const resp = await fetch('/api/predict', {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+
+        if (!resp.ok) throw new Error("Server error");
+
+        const j = await resp.json();
+        showResultFromServer(j);
+        showStatus("Model result (from server) received.");
+      } catch (error) {
+        console.error(error);
+        showStatus("Error contacting server. Check console.");
       }
     }
 
     document.getElementById('calcBtn').addEventListener('click', () => {
-      const vals = readForm();
-
-      // Basic validation / hinting
-      if(vals.age < 20 || vals.age > 120){
-        alert('Please enter a valid age (20-120).');
+      const data = readFormValues();
+      if (!data.age) {
+        alert("Enter valid age");
         return;
       }
-      if(vals.totalChol <= 0){
-        if(!confirm('Total cholesterol is empty or zero. Continue anyway?')) return;
-      }
-
-      const riskPct = computeRisk(vals);
-      el('modelNote').textContent = 'Simulated model (client-side). Replace with server model to use trained weights.';
-      showResult(riskPct);
-    });
-
-    // Allow Enter to calculate
-    document.getElementById('cardioForm').addEventListener('keydown', e=>{
-      if(e.key === 'Enter'){
-        e.preventDefault();
-        document.getElementById('calcBtn').click();
-      }
+      callPredict(data);
     });
   </script>
 </body>
